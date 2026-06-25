@@ -1,4 +1,4 @@
-# Track App - End-to-End CI/CD with Jenkins, K3s, Ansible & CloudFormation
+# Track App - End-to-End CI/CD with Jenkins
 
 ## Overview
 
@@ -141,8 +141,6 @@ Jenkins
 
 ---
 
-## Future Improvements
+## Author
 
-- SonarQube Integration
-- Gitleaks Secret Scanning
-- GitOps with ArgoCD
+**Devin Jodiyudanto**
