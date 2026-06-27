@@ -13,7 +13,7 @@ pipeline {
                 git(
                     branch: 'main',
                     credentialsId: 'github-creds',
-                    url: 'https://github.com/jodyys/track-app.git'
+                    url: 'https://github.com/jodyys/Track-App.git'
                 )
             }
         }
