@@ -59,15 +59,16 @@ pipeline {
 
         stage('SAST - SonarQube') {
             steps {
-                withSonarQubeEnv('SonarQube-TrackApp') { // Menggunakan nama env yang sudah terdeteksi di servermu
-                    script {
-                        def scannerHome = tool 'SonarScanner' // Memanggil tool yang dikonfigurasi di Jenkins
+                withSonarQubeEnv('SonarQube-TrackApp') { 
+                    script { 
+                        def scannerHome = tool 'SonarScanner' 
                         sh "${scannerHome}/bin/SonarScanner \
                         -Dsonar.projectKey=book-app \
                         -Dsonar.sources=. \
                         -Dsonar.host.url=\$SONAR_HOST_URL \
                         -Dsonar.token=\$SONAR_AUTH_TOKEN"
-                }
+                    }
+                } 
             }
         }
 
@@ -151,11 +152,11 @@ pipeline {
                     # 1. Terapkan manifes dasar dari folder k8s/
                     kubectl apply -f k8s/
 
-                    # 2. Update image secara dinamis menggunakan variabel Jenkins (ditambahkan prefix 'v')
+                    # 2. Update image secara dinamis menggunakan variabel Jenkins
                     kubectl set image deployment/backend backend=jodyys/bookapp-backend:v${BUILD_NUMBER}
                     kubectl set image deployment/frontend frontend=jodyys/bookapp-frontend:v${BUILD_NUMBER}
 
-                    # 3. Verifikasi status deployment sesuai target nama di atas
+                    # 3. Verifikasi status deployment
                     kubectl rollout status deployment/backend
                     kubectl rollout status deployment/frontend
                     """
