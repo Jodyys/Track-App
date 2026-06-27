@@ -1,15 +1,13 @@
 pipeline {
-
     agent any
 
     environment {
-        DOCKER_USER = "jodyys"
-        IMAGE_BACKEND = "bookapp-backend"
-        IMAGE_FRONTEND = "bookapp-frontend"
+        DOCKER_USER     = "jodyys"
+        IMAGE_BACKEND   = "bookapp-backend"
+        IMAGE_FRONTEND  = "bookapp-frontend"
     }
 
     stages {
-
         stage('Checkout') {
             steps {
                 git(
@@ -51,13 +49,36 @@ pipeline {
                 export PATH="$HOME/.local/bin:$PATH"
 
                 if find . -name "test_*.py" -o -name "*_test.py" | grep -q .; then
-                pytest
+                    pytest
                 else
-                echo "No Python tests found. Skipping pytest."
+                    echo "No Python tests found. Skipping pytest."
                 fi
-            '''
-    }
-}
+                '''
+            }
+        }
+
+        stage('SAST - SonarQube') {
+            steps {
+                echo "=== Running SonarQube Scan ==="
+                def scannerHome = tool 'SonarScanner'
+                withSonarQubeEnv('SonarQube-BookApp') {
+                sh """
+                ${scannerHome}/bin/sonar-scanner \
+                -Dsonar.projectKey=book-App \
+                -Dsonar.projectName="book-App" \
+                -Dsonar.sources=.
+                """
+                }
+            }
+        }
+
+        stage('Quality Gate') {
+            steps {
+                timeout(time: 5, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
 
         stage('Build Image') {
             steps {
@@ -142,7 +163,6 @@ pipeline {
                 }
             }
         }
-
     }
 
     post {
