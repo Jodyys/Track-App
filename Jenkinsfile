@@ -59,14 +59,14 @@ pipeline {
 
         stage('SAST - SonarQube') {
             steps {
-                withSonarQubeEnv('SonarQube-TrackApp') {
-                    sh '''
-                    sonar-scanner \
-                    -Dsonar.projectKey=book-app \
-                    -Dsonar.sources=. \
-                    -Dsonar.host.url=$SONAR_HOST_URL \
-                    -Dsonar.token=$SONAR_AUTH_TOKEN
-                    '''
+                withSonarQubeEnv('SonarQube-TrackApp') { // Menggunakan nama env yang sudah terdeteksi di servermu
+                    script {
+                        def scannerHome = tool 'SonarScanner' // Memanggil tool yang dikonfigurasi di Jenkins
+                        sh "${scannerHome}/bin/SonarScanner \
+                        -Dsonar.projectKey=book-app \
+                        -Dsonar.sources=. \
+                        -Dsonar.host.url=\$SONAR_HOST_URL \
+                        -Dsonar.token=\$SONAR_AUTH_TOKEN"
                 }
             }
         }
