@@ -50,32 +50,36 @@ pipeline {
             }
         }
 
-        // SATU STAGE BESAR YANG DI DALAMNYA MUNCUL 3 KOTAK VISUAL SEKALIGUS
         stage('Security & Quality Analysis') {
             parallel {
-                stage('SonarQube Scan') {
-                    steps {
-                        withSonarQubeEnv('SonarQube-TrackApp') { 
-                            script { 
-                                def scannerHome = tool 'SonarScanner' 
-                                sh "${scannerHome}/bin/sonar-scanner \
-                                -Dsonar.projectKey=book-app \
-                                -Dsonar.sources=. \
-                                -Dsonar.host.url=\$SONAR_HOST_URL \
-                                -Dsonar.token=\$SONAR_AUTH_TOKEN"
+                // Jalur 1: Proses SonarQube dijalankan berurutan (Scan dulu, baru Gate)
+                stage('SonarQube Static Analysis') {
+                    stages {
+                        stage('SonarQube Scan') {
+                            steps {
+                                withSonarQubeEnv('SonarQube-TrackApp') { 
+                                    script { 
+                                        def scannerHome = tool 'SonarScanner' 
+                                        sh "${scannerHome}/bin/sonar-scanner \
+                                        -Dsonar.projectKey=book-app \
+                                        -Dsonar.sources=. \
+                                        -Dsonar.host.url=\$SONAR_HOST_URL \
+                                        -Dsonar.token=\$SONAR_AUTH_TOKEN"
+                                    }
+                                }
+                            }
+                        }
+                        stage('SonarQube Gate') {
+                            steps {
+                                timeout(time: 5, unit: 'MINUTES') {
+                                    waitForQualityGate abortPipeline: true
+                                }
                             }
                         }
                     }
                 }
 
-                stage('SonarQube Gate') {
-                    steps {
-                        timeout(time: 5, unit: 'MINUTES') {
-                            waitForQualityGate abortPipeline: true
-                        }
-                    }
-                }
-
+                // Jalur 2: Trivy FS Scan berjalan mandiri secara paralel di sebelahnya
                 stage('Trivy FS Scan') {
                     steps {
                         sh '''
