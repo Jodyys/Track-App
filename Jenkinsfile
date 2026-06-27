@@ -50,31 +50,41 @@ pipeline {
             }
         }
 
-        stage('Security & Quality Checks') {
-            steps {
-                // 1. Eksekusi SAST SonarQube Scanner
-                withSonarQubeEnv('SonarQube-TrackApp') { 
-                    script { 
-                        def scannerHome = tool 'SonarScanner' 
-                        sh "${scannerHome}/bin/sonar-scanner \
-                        -Dsonar.projectKey=book-app \
-                        -Dsonar.sources=. \
-                        -Dsonar.host.url=\$SONAR_HOST_URL \
-                        -Dsonar.token=\$SONAR_AUTH_TOKEN"
+        // SATU STAGE BESAR YANG DI DALAMNYA MUNCUL 3 KOTAK VISUAL SEKALIGUS
+        stage('Security & Quality Analysis') {
+            parallel {
+                stage('SonarQube Scan') {
+                    steps {
+                        withSonarQubeEnv('SonarQube-TrackApp') { 
+                            script { 
+                                def scannerHome = tool 'SonarScanner' 
+                                sh "${scannerHome}/bin/sonar-scanner \
+                                -Dsonar.projectKey=book-app \
+                                -Dsonar.sources=. \
+                                -Dsonar.host.url=\$SONAR_HOST_URL \
+                                -Dsonar.token=\$SONAR_AUTH_TOKEN"
+                            }
+                        }
                     }
                 }
-                
-                // 2. Menunggu Quality Gate SonarQube (Timeout 5 Menit)
-                timeout(time: 5, unit: 'MINUTES') {
-                    waitForQualityGate abortPipeline: true
+
+                stage('SonarQube Gate') {
+                    steps {
+                        timeout(time: 5, unit: 'MINUTES') {
+                            waitForQualityGate abortPipeline: true
+                        }
+                    }
                 }
 
-                // 3. Eksekusi SCA Trivy File System Scan
-                sh '''
-                echo "=== SCA Scan Backend & Frontend Dependencies ==="
-                trivy fs --severity HIGH,CRITICAL backend/
-                trivy fs --severity HIGH,CRITICAL frontend/
-                '''
+                stage('Trivy FS Scan') {
+                    steps {
+                        sh '''
+                        echo "=== SCA Scan Backend & Frontend Dependencies ==="
+                        trivy fs --severity HIGH,CRITICAL backend/
+                        trivy fs --severity HIGH,CRITICAL frontend/
+                        '''
+                    }
+                }
             }
         }
 
