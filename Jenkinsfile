@@ -72,11 +72,23 @@ pipeline {
             }
         }
 
-        stage('Quality Gate') {
+        stage('Quality Gate SonarQube') {
             steps {
                 timeout(time: 5, unit: 'MINUTES') {
                     waitForQualityGate abortPipeline: true
                 }
+            }
+        }
+
+        stage('SCA Trivy FS') {
+            steps {
+                sh '''
+                echo "=== SCA Scan Backend Dependencies ==="
+                trivy fs --severity HIGH,CRITICAL backend/
+
+                echo "=== SCA Scan Frontend Dependencies ==="
+                trivy fs --severity HIGH,CRITICAL frontend/
+                '''
             }
         }
 
@@ -143,7 +155,7 @@ pipeline {
             }
         }
 
-        stage('Deploy K3s') {
+        stage('Deploy K3s - EC2') {
             steps {
                 withCredentials([
                     file(credentialsId: 'k3s-kubeconfig', variable: 'KUBECONFIG')
@@ -153,8 +165,8 @@ pipeline {
                     kubectl apply -f k8s/
 
                     # 2. Update image secara dinamis menggunakan variabel Jenkins
-                    kubectl set image deployment/backend backend=jodyys/bookapp-backend:v${BUILD_NUMBER}
-                    kubectl set image deployment/frontend frontend=jodyys/bookapp-frontend:v${BUILD_NUMBER}
+                    kubectl set image deployment/backend backend=${DOCKER_USER}/${IMAGE_BACKEND}:v${BUILD_NUMBER}
+                    kubectl set image deployment/frontend frontend=${DOCKER_USER}/${IMAGE_FRONTEND}:v${BUILD_NUMBER}
 
                     # 3. Verifikasi status deployment
                     kubectl rollout status deployment/backend
