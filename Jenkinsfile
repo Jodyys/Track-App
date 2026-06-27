@@ -59,7 +59,7 @@ pipeline {
 
         stage('SAST - SonarQube') {
             steps {
-                withSonarQubeEnv('sonarqube') {
+                withSonarQubeEnv('SonarQube-TrackApp') {
                     sh '''
                     sonar-scanner \
                     -Dsonar.projectKey=book-app \
