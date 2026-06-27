@@ -62,7 +62,7 @@ pipeline {
                 withSonarQubeEnv('SonarQube-TrackApp') { 
                     script { 
                         def scannerHome = tool 'SonarScanner' 
-                        sh "${scannerHome}/bin/SonarScanner \
+                        sh "${scannerHome}/bin/sonar-scanner \
                         -Dsonar.projectKey=book-app \
                         -Dsonar.sources=. \
                         -Dsonar.host.url=\$SONAR_HOST_URL \
