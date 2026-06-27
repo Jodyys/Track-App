@@ -50,12 +50,11 @@ pipeline {
             }
         }
 
-        stage('Security & Quality Analysis') {
+        stage('Security & Quality') {
             parallel {
-                // Jalur 1: Proses SonarQube dijalankan berurutan (Scan dulu, baru Gate)
                 stage('SonarQube Static Analysis') {
                     stages {
-                        stage('SonarQube Scan') {
+                        stage('SAST - SonarQube Scan') {
                             steps {
                                 withSonarQubeEnv('SonarQube-TrackApp') { 
                                     script { 
