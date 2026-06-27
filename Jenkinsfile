@@ -13,7 +13,7 @@ pipeline {
                 git(
                     branch: 'main',
                     credentialsId: 'github-creds',
-                    url: 'https://github.com/jodyys/Track-App.git'
+                    url: 'https://github.com/Jodyys/Track-App.git'
                 )
             }
         }
@@ -162,7 +162,7 @@ pipeline {
                 }
             }
         }
-    } // <--- SEKARANG BLOK STAGES UTAMA DITUTUP DENGAN BENAR DI SINI
+    }
 
     post {
         success {
