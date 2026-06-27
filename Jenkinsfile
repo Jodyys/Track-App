@@ -11,9 +11,9 @@ pipeline {
         stage('Checkout') {
             steps {
                 git(
-                    branch: 'devops-test',
+                    branch: 'main',
                     credentialsId: 'github-creds',
-                    url: 'https://github.com/jodyys/book-app.git'
+                    url: 'https://github.com/jodyys/track-app.git'
                 )
             }
         }
