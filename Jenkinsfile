@@ -22,9 +22,7 @@ pipeline {
             steps {
                 sh '''
                 echo "=== Linting Frontend (Node.js) ==="
-                cd frontend
-                npm install
-                npm run lint
+                cd frontend && npm install && npm run lint
 
                 echo "=== Linting Backend (Python) ==="
                 cd ../backend
@@ -38,14 +36,9 @@ pipeline {
         stage('Test') {
             steps {
                 sh '''
-                echo "=== Skipping Frontend Test (No test script found) ==="
-
                 echo "=== Testing Backend (Python) ==="
                 cd backend
-
-                python3 -m pip install --user --break-system-packages -r requirements.txt
-                python3 -m pip install --user --break-system-packages pytest
-
+                python3 -m pip install --user --break-system-packages -r requirements.txt pytest
                 export PATH="$HOME/.local/bin:$PATH"
 
                 if find . -name "test_*.py" -o -name "*_test.py" | grep -q .; then
@@ -57,8 +50,9 @@ pipeline {
             }
         }
 
-        stage('SAST - SonarQube') {
+        stage('Security & Quality Checks') {
             steps {
+                // 1. Eksekusi SAST SonarQube Scanner
                 withSonarQubeEnv('SonarQube-TrackApp') { 
                     script { 
                         def scannerHome = tool 'SonarScanner' 
@@ -68,25 +62,17 @@ pipeline {
                         -Dsonar.host.url=\$SONAR_HOST_URL \
                         -Dsonar.token=\$SONAR_AUTH_TOKEN"
                     }
-                } 
-            }
-        }
-
-        stage('Quality Gate SonarQube') {
-            steps {
+                }
+                
+                // 2. Menunggu Quality Gate SonarQube (Timeout 5 Menit)
                 timeout(time: 5, unit: 'MINUTES') {
                     waitForQualityGate abortPipeline: true
                 }
-            }
-        }
 
-        stage('SCA Trivy FS') {
-            steps {
+                // 3. Eksekusi SCA Trivy File System Scan
                 sh '''
-                echo "=== SCA Scan Backend Dependencies ==="
+                echo "=== SCA Scan Backend & Frontend Dependencies ==="
                 trivy fs --severity HIGH,CRITICAL backend/
-
-                echo "=== SCA Scan Frontend Dependencies ==="
                 trivy fs --severity HIGH,CRITICAL frontend/
                 '''
             }
@@ -95,17 +81,9 @@ pipeline {
         stage('Build Image') {
             steps {
                 sh """
-                # Build Docker Image Backend
-                docker build \
-                -t ${DOCKER_USER}/${IMAGE_BACKEND}:v${BUILD_NUMBER} \
-                -t ${DOCKER_USER}/${IMAGE_BACKEND}:latest \
-                backend
-
-                # Build Docker Image Frontend
-                docker build \
-                -t ${DOCKER_USER}/${IMAGE_FRONTEND}:v${BUILD_NUMBER} \
-                -t ${DOCKER_USER}/${IMAGE_FRONTEND}:latest \
-                frontend
+                # Build Docker Image Backend & Frontend
+                docker build -t ${DOCKER_USER}/${IMAGE_BACKEND}:v${BUILD_NUMBER} -t ${DOCKER_USER}/${IMAGE_BACKEND}:latest backend
+                docker build -t ${DOCKER_USER}/${IMAGE_FRONTEND}:v${BUILD_NUMBER} -t ${DOCKER_USER}/${IMAGE_FRONTEND}:latest frontend
                 """
             }
         }
@@ -131,26 +109,14 @@ pipeline {
                     sh """
                     echo \$DOCKERHUB_PASS | docker login -u \$DOCKERHUB_USER --password-stdin
 
-                    # Push Backend
+                    # Push Backend & Frontend
                     docker push ${DOCKER_USER}/${IMAGE_BACKEND}:v${BUILD_NUMBER}
                     docker push ${DOCKER_USER}/${IMAGE_BACKEND}:latest
-                    
-                    # Push Frontend
                     docker push ${DOCKER_USER}/${IMAGE_FRONTEND}:v${BUILD_NUMBER}
                     docker push ${DOCKER_USER}/${IMAGE_FRONTEND}:latest
 
                     docker logout
                     """
-                }
-            }
-        }
-
-        stage('Test K3s Connection') {
-            steps {
-                withCredentials([
-                    file(credentialsId: 'k3s-kubeconfig', variable: 'KUBECONFIG')
-                ]) {
-                    sh 'kubectl get nodes'
                 }
             }
         }
@@ -161,6 +127,9 @@ pipeline {
                     file(credentialsId: 'k3s-kubeconfig', variable: 'KUBECONFIG')
                 ]) {
                     sh """
+                    # Verifikasi Koneksi K3s Cluster
+                    kubectl get nodes
+
                     # 1. Terapkan manifes dasar dari folder k8s/
                     kubectl apply -f k8s/
 
