@@ -59,15 +59,14 @@ pipeline {
 
         stage('SAST - SonarQube') {
             steps {
-                echo "=== Running SonarQube Scan ==="
-                def scannerHome = tool 'SonarScanner'
-                withSonarQubeEnv('SonarQube-BookApp') {
-                sh """
-                ${scannerHome}/bin/sonar-scanner \
-                -Dsonar.projectKey=book-App \
-                -Dsonar.projectName="book-App" \
-                -Dsonar.sources=.
-                """
+                withSonarQubeEnv('sonarqube') {
+                    sh '''
+                    sonar-scanner \
+                    -Dsonar.projectKey=book-app \
+                    -Dsonar.sources=. \
+                    -Dsonar.host.url=$SONAR_HOST_URL \
+                    -Dsonar.token=$SONAR_AUTH_TOKEN
+                    '''
                 }
             }
         }
@@ -163,7 +162,7 @@ pipeline {
                 }
             }
         }
-    }
+    } // <--- SEKARANG BLOK STAGES UTAMA DITUTUP DENGAN BENAR DI SINI
 
     post {
         success {
